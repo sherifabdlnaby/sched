@@ -1,17 +1,17 @@
-package Job
+package job
 
 type ErrorJobPanic struct {
-	Name string
+	Message string
 }
 
 func (e ErrorJobPanic) Error() string {
-	return e.Name
+	return e.Message
 }
 
-type ErrorJobNotStarted struct {
-	Name string
+type ErrorJobStarted struct {
+	Message string
 }
 
-func (e ErrorJobNotStarted) Error() string {
-	return e.Name
+func (e ErrorJobStarted) Error() string {
+	return e.Message
 }
