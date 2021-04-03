@@ -11,7 +11,7 @@ type State int64
 
 const (
 	NEW State = iota
-	STARTED
+	RUNNING
 	FINISHED
 	PANICKED
 )
@@ -69,7 +69,7 @@ func (j *Job) Start() error {
 func (j *Job) start() (err error) {
 	j.mx.RLock()
 	if j.state != NEW {
-		if j.state == STARTED {
+		if j.state == RUNNING {
 			err = ErrorJobStarted{Message: "job already started"}
 			return err
 		}
@@ -79,7 +79,7 @@ func (j *Job) start() (err error) {
 	j.mx.RUnlock()
 
 	j.mx.Lock()
-	j.state = STARTED
+	j.state = RUNNING
 	j.startTime = time.Now()
 
 	// Handle Panics and set correct state
