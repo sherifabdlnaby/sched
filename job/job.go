@@ -49,6 +49,7 @@ func (j *Job) ID() string {
 	return j.id
 }
 
+//Duration Return the Elapsed Duration of a Job
 func (j *Job) Duration() time.Duration {
 	j.mx.RLock()
 	defer j.mx.RUnlock()
@@ -62,11 +63,11 @@ func (j *Job) Duration() time.Duration {
 	return -1
 }
 
-func (j *Job) Start() error {
-	return j.start()
+func (j *Job) Run() error {
+	return j.run()
 }
 
-func (j *Job) start() (err error) {
+func (j *Job) run() (err error) {
 	j.mx.RLock()
 	if j.state != NEW {
 		if j.state == RUNNING {
@@ -98,7 +99,7 @@ func (j *Job) start() (err error) {
 	// Unlock State
 	j.mx.Unlock()
 
-	// Start Job
+	// Run Job
 	j.jobFunc()
 
 	return nil
