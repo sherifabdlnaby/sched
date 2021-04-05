@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/sherifabdlnaby/sched/job"
 	"sync"
@@ -24,14 +23,16 @@ type Schedule struct {
 	cancel  context.CancelFunc
 
 	// Concurrent safe JobMap
-	jobMap jobMap
+	activeJobs jobMap
 
 	// Wait-group
 	wg sync.WaitGroup
+
+	logger Logger
 }
 
 // NewScheduleWithID NewSchedule
-func NewScheduleWithID(ID string, jobFunc func(), timer Timer) *Schedule {
+func NewScheduleWithID(ID string, jobFunc func(), timer Timer, logger Logger) *Schedule {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Schedule{
 		ID:         ID,
@@ -39,12 +40,13 @@ func NewScheduleWithID(ID string, jobFunc func(), timer Timer) *Schedule {
 		timer:      timer,
 		context:    ctx,
 		cancel:     cancel,
-		jobMap:     *newJobMap(),
+		activeJobs: *newJobMap(),
+		logger:     logger,
 	}
 }
 
-func NewSchedule(jobFunc func(), timer Timer) *Schedule {
-	return NewScheduleWithID(uuid.New().String(), jobFunc, timer)
+func NewSchedule(jobFunc func(), timer Timer, logger Logger) *Schedule {
+	return NewScheduleWithID(uuid.New().String(), jobFunc, timer, logger)
 }
 
 func (s *Schedule) Start() {
@@ -53,10 +55,13 @@ func (s *Schedule) Start() {
 
 func (s *Schedule) Stop() {
 	// Cancel Main Context
+	s.logger.Infow("Job Schedule Stopping... canceling scheduled runs", "Job", s.ID)
 	s.cancel()
 
 	// Wait for all instances
+	s.logger.Infow("Job Schedule Stopping... awaiting active jobs to finish", "Job", s.ID)
 	s.wg.Wait()
+	s.logger.Infow("Job Schedule Stopped", "Job", s.ID)
 }
 
 //controlLoop scheduler control loop
@@ -68,13 +73,16 @@ func (s *Schedule) controlLoop() {
 			return
 		default:
 			nextRun := s.timer.Next()
-			nextRunChan := time.After(nextRun.Sub(time.Now()))
-
-			// Wait Trigger
-			<-nextRunChan
-
-			// Run job
-			go s.runJobInstance()
+			nextRunDuration := nextRun.Sub(time.Now())
+			nextRunChan := time.After(nextRunDuration)
+			s.logger.Infow("Job Next Run Scheduled", "Job", s.ID, "After", nextRunDuration.Round(1*time.Second).String(), "At", nextRun.Format(time.RFC3339))
+			select {
+			case <-s.context.Done():
+				return
+			case <-nextRunChan:
+				// Run job
+				go s.runJobInstance()
+			}
 		}
 	}
 }
@@ -85,12 +93,15 @@ func (s *Schedule) runJobInstance() {
 
 	jobInstance := job.NewJob(s.jobSrcFunc)
 
-	s.jobMap.add(jobInstance)
-	defer s.jobMap.delete(jobInstance)
+	s.activeJobs.add(jobInstance)
+	defer s.activeJobs.delete(jobInstance)
+
+	s.logger.Infow("Job Starting", "Job", s.ID, "Instance", jobInstance.ID())
 
 	err := jobInstance.Run()
+
 	if err != nil {
-		// TODO Handle on Error
-		fmt.Println(err)
+		s.logger.Errorw("Job Error", "Job", s.ID, "Instance", jobInstance.ID(), "Duration", jobInstance.Duration().Round(1*time.Millisecond), "State", jobInstance.State().String(), "error", err.Error())
 	}
+	s.logger.Infow("Job Finished", "Job", s.ID, "Instance", jobInstance.ID(), "Duration", jobInstance.Duration().Round(1*time.Millisecond), "State", jobInstance.State().String())
 }

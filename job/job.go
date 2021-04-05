@@ -7,15 +7,6 @@ import (
 	"time"
 )
 
-type State int64
-
-const (
-	NEW State = iota
-	RUNNING
-	FINISHED
-	PANICKED
-)
-
 type Job struct {
 	id         string
 	jobFunc    func()
@@ -68,20 +59,16 @@ func (j *Job) Run() error {
 }
 
 func (j *Job) run() (err error) {
-	j.mx.RLock()
+	j.mx.Lock()
 	if j.state != NEW {
 		if j.state == RUNNING {
 			err = ErrorJobStarted{Message: "job already started"}
-			return err
+		} else {
+			err = ErrorJobStarted{Message: "job finished execution"}
 		}
-		err = ErrorJobStarted{Message: "job finished execution"}
+		j.mx.Unlock()
 		return err
 	}
-	j.mx.RUnlock()
-
-	j.mx.Lock()
-	j.state = RUNNING
-	j.startTime = time.Now()
 
 	// Handle Panics and set correct state
 	defer func() {
@@ -95,6 +82,9 @@ func (j *Job) run() (err error) {
 		j.finishTime = time.Now()
 		j.mx.Unlock()
 	}()
+
+	j.state = RUNNING
+	j.startTime = time.Now()
 
 	// Unlock State
 	j.mx.Unlock()
