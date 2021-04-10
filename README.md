@@ -13,7 +13,7 @@
       <img src="https://img.shields.io/github/v/tag/sherifabdlnaby/sched?label=release&amp;sort=semver">
     </a>
    <a>
-      <img src="https://img.shields.io/badge/Go-%3E=v1.11-blue?style=flat&logo=go" alt="Go Version">
+      <img src="https://img.shields.io/badge/Go-%3E=v1.13-blue?style=flat&logo=go" alt="Go Version">
    </a>
     <a>
       <img src="https://github.com/sherifabdlnaby/sched/workflows/Build/badge.svg">
