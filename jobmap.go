@@ -1,4 +1,4 @@
-package main
+package sched
 
 import (
 	"github.com/sherifabdlnaby/sched/job"

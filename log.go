@@ -1,4 +1,4 @@
-package main
+package sched
 
 import (
 	"go.uber.org/zap"
@@ -33,7 +33,7 @@ func (l logger) Named(name string) Logger {
 func DefaultLogger() Logger {
 	// TODO control verbosity
 	loggerBase, _ := zap.NewDevelopment()
-	sugarLogger := loggerBase.Sugar().Named("sched")
+	sugarLogger := loggerBase.Sugar()
 	return &logger{
 		sugarLogger,
 	}

@@ -1,4 +1,4 @@
-package main
+package sched
 
 import (
 	"fmt"
@@ -21,6 +21,19 @@ func NewOnce(delay time.Duration) (*Once, error) {
 	}
 	return &Once{
 		delay: delay,
+	}, nil
+}
+
+func NewOnceTime(t time.Time) (*Once, error) {
+	remaining := t.Sub(time.Now())
+	if remaining < 0 {
+		return &Once{
+			delay: remaining,
+			done:  true,
+		}, nil
+	}
+	return &Once{
+		delay: remaining,
 	}, nil
 }
 

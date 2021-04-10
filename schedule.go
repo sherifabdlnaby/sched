@@ -1,7 +1,6 @@
-package main
+package sched
 
 import (
-	"github.com/google/uuid"
 	"github.com/sherifabdlnaby/sched/job"
 	"github.com/uber-go/tally"
 	"sync"
@@ -39,8 +38,8 @@ type Schedule struct {
 	metrics metrics
 }
 
-// NewScheduleWithID NewSchedule
-func NewScheduleWithID(ID string, jobFunc func(), timer Timer, opts ...Option) *Schedule {
+// NewSchedule NewSchedule
+func NewSchedule(ID string, timer Timer, jobFunc func(), opts ...Option) *Schedule {
 	var options = defaultOptions()
 
 	// Apply Options
@@ -72,10 +71,6 @@ func NewScheduleWithID(ID string, jobFunc func(), timer Timer, opts ...Option) *
 		logger:     logger,
 		metrics:    metrics,
 	}
-}
-
-func NewSchedule(jobFunc func(), timer Timer, opts ...Option) *Schedule {
-	return NewScheduleWithID(uuid.New().String(), jobFunc, timer, opts...)
 }
 
 func (s *Schedule) Start() {
@@ -127,14 +122,18 @@ func (s *Schedule) Stop() {
 }
 
 func (s *Schedule) Finish() {
+
 	// Stop First
 	s.Stop()
 
 	s.mx.Lock()
 	defer s.mx.Unlock()
-	s.state = FINISHED
 
-	// TODO finish logic (stop/close metrics emitting)
+	if s.state == FINISHED {
+		return
+	}
+
+	s.state = FINISHED
 	s.logger.Infow("Job Schedule Finished")
 }
 

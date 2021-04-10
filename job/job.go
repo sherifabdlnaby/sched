@@ -84,6 +84,7 @@ func (j *Job) run() (err error) {
 	// Handle Panics and set correct state
 	defer func() {
 		j.mx.Lock()
+		// TODO handle panics
 		if r := recover(); r != nil {
 			err = ErrorJobPanic{Message: fmt.Sprintf("job panicked: %v", r)}
 			j.state = PANICKED

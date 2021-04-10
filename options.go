@@ -1,4 +1,4 @@
-package main
+package sched
 
 import (
 	"github.com/uber-go/tally"
@@ -33,7 +33,7 @@ type loggerOption struct {
 }
 
 func (l loggerOption) apply(opts *options) {
-	opts.logger = l.Logger
+	opts.logger = l.Logger.Named("sched")
 }
 
 func WithLogger(logger Logger) Option {
