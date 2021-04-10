@@ -1,12 +1,22 @@
 package sched
 
+//State Indicate the state of the Schedule
 type State int64
 
 const (
+	//NEW Schedule has just been created and hasn't started before
 	NEW State = iota
+
+	// STARTED Start Schedule has started and is running.
 	STARTED
+
+	// STOPPING Schedule is Stopping and is waiting for all active jobs to finish.
 	STOPPING
+
+	// STOPPED Schedule has stopped and no longer scheduling new Jobs.
 	STOPPED
+
+	// FINISHED Schedule has finished, and will not be able to start again.
 	FINISHED
 )
 

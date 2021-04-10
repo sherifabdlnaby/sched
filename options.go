@@ -25,6 +25,8 @@ func defaultOptions() *options {
 	}
 }
 
+// Option to customize schedule behavior, check the sched.With*() functions that implement Option interface for the
+// available options
 type Option interface {
 	apply(*options)
 }
@@ -37,6 +39,7 @@ func (l loggerOption) apply(opts *options) {
 	opts.logger = l.Logger.Named("sched")
 }
 
+//WithLogger Use the supplied Logger as the logger.
 func WithLogger(logger Logger) Option {
 	return loggerOption{Logger: logger}
 }
@@ -56,10 +59,16 @@ func (m metricsOption) apply(opts *options) {
 	opts.defaultScopePrintEvery = m.defaultScopePrintEvery
 }
 
+// WithMetrics Supply a tally.Scope to expose schedule metrics with. Ex. uber-go/tally/prometheus scope to expose
+// schedule metrics via Prometheus endpoint.
+// Use WithConsoleMetrics() to supply a predefined metrics console reporter without the need to implement any
+// special metrics reporter scope.
 func WithMetrics(metricsScope tally.Scope) Option {
 	return metricsOption{metricsScope: metricsScope, initConsoleMetrics: false, defaultScopePrintEvery: 0}
 }
 
+// WithConsoleMetrics a predefined console metrics reporter, uses the Logger interface of the schedule to print out
+// metrics logs.
 func WithConsoleMetrics(printEvery time.Duration) Option {
 	return metricsOption{metricsScope: nil, initConsoleMetrics: true, defaultScopePrintEvery: printEvery}
 }

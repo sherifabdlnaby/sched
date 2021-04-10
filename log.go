@@ -30,6 +30,7 @@ func (l logger) Named(name string) Logger {
 	return logger{SugaredLogger: l.SugaredLogger.Named(name)}
 }
 
+//DefaultLogger Return Default Sched Logger based on Zap's sugared logger
 func DefaultLogger() Logger {
 	// TODO control verbosity
 	loggerBase, _ := zap.NewDevelopment()
@@ -39,6 +40,7 @@ func DefaultLogger() Logger {
 	}
 }
 
+//NopLogger Return a No Op Logger that prints nothing.
 func NopLogger() Logger {
 	loggerBase := zap.NewNop()
 	sugarLogger := loggerBase.Sugar()

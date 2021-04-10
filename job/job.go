@@ -8,6 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
+//Job Wraps JobFun and provide:
+//	1. Creation, Start, and Finish Time
+//	2. Recover From Panics
 type Job struct {
 	id         string
 	jobFunc    func()
@@ -18,10 +21,14 @@ type Job struct {
 	mx         sync.RWMutex
 }
 
+//State Return Job current state.
 func (j *Job) State() State {
+	j.mx.RLock()
+	defer j.mx.RUnlock()
 	return j.state
 }
 
+//NewJobWithID Create new Job with the supplied Id.
 func NewJobWithID(id string, jobFunc func()) *Job {
 	return &Job{
 		id:         id,
@@ -33,14 +40,18 @@ func NewJobWithID(id string, jobFunc func()) *Job {
 	}
 }
 
+//NewJob Create new Job, ID is assigned a UUID instead.
 func NewJob(jobFunc func()) *Job {
 	return NewJobWithID(uuid.New().String(), jobFunc)
 }
 
+//ID Return Job ID
 func (j *Job) ID() string {
 	return j.id
 }
 
+//ActualElapsed Return the actual time of procession of Job.
+// Return -1 if job hasn't started yet.
 func (j *Job) ActualElapsed() time.Duration {
 	j.mx.RLock()
 	defer j.mx.RUnlock()
@@ -54,6 +65,8 @@ func (j *Job) ActualElapsed() time.Duration {
 	return -1
 }
 
+//TotalElapsed Returns the total time between creation of object and finishing processing its job.
+// Return -1 if job hasn't started yet.
 func (j *Job) TotalElapsed() time.Duration {
 	j.mx.RLock()
 	defer j.mx.RUnlock()
@@ -66,6 +79,8 @@ func (j *Job) TotalElapsed() time.Duration {
 	}
 	return -1
 }
+
+//Run Run the internal Job (synchronous)
 func (j *Job) Run() error {
 	return j.run()
 }

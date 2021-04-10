@@ -1,5 +1,6 @@
 package job
 
+//ErrorJobPanic Error returned when a Job panics
 type ErrorJobPanic struct {
 	Message string
 }
@@ -12,6 +13,7 @@ func (e ErrorJobPanic) Unwrap() error {
 	return e
 }
 
+//ErrorJobStarted Error returned when a has already started.
 type ErrorJobStarted struct {
 	Message string
 }

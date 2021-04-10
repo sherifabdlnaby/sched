@@ -8,6 +8,8 @@ import (
 	"github.com/uber-go/tally"
 )
 
+// Schedule A Schedule is an object that wraps a Job (func(){}) and runs it on a schedule according to the supplied
+// Timer; With the the ability to expose metrics, and write logs to indicate job health, state, and stats.
 type Schedule struct {
 	ID string
 
@@ -39,7 +41,7 @@ type Schedule struct {
 	metrics metrics
 }
 
-// NewSchedule NewSchedule
+// NewSchedule Create a new schedule for` jobFunc func()` that will run according to `timer Timer` with the supplied []Options
 func NewSchedule(id string, timer Timer, jobFunc func(), opts ...Option) *Schedule {
 	var options = defaultOptions()
 
@@ -71,6 +73,12 @@ func NewSchedule(id string, timer Timer, jobFunc func(), opts ...Option) *Schedu
 	}
 }
 
+// Start Start the scheduler. Method is concurrent safe. Calling Start() have the following effects according to the
+//	scheduler state:
+//		1. NEW: Start the Schedule; running the defined Job on the first Timer's Next() time.
+//		2. STARTED: No Effect (and prints warning)
+//		3. STOPPED: Restart the schedule
+//		4. FINISHED: No Effect (and prints warning)
 func (s *Schedule) Start() {
 	s.mx.Lock()
 	defer s.mx.Unlock()
@@ -96,11 +104,19 @@ func (s *Schedule) Start() {
 	go func() {}()
 }
 
+// Stop stops the scheduler. Method is **Blocking** and concurrent safe. When called:
+//		1. Schedule will cancel all waiting scheduled jobs.
+//		2. Schedule will wait for all running jobs to finish.
+//	Calling Stop() has the following effects depending on the state of the schedule:
+//		1. NEW: No Effect
+//		2. STARTED: Stop Schedule
+//		3. STOPPED: No Effect
+//		4. FINISHED: No Effect
 func (s *Schedule) Stop() {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
-	if s.state == STOPPED || s.state == FINISHED {
+	if s.state == STOPPED || s.state == FINISHED || s.state == NEW {
 		return
 	}
 	s.state = STOPPING
@@ -119,6 +135,9 @@ func (s *Schedule) Stop() {
 	_ = s.logger.Sync()
 }
 
+// Finish stops the scheduler and put it FINISHED state so that schedule cannot re-start again. Finish() is called
+// automatically if Schedule Timer returned `done bool` == true.
+// Method is **Blocking** and concurrent safe.
 func (s *Schedule) Finish() {
 	// Stop First
 	s.Stop()
