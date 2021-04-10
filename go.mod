@@ -1,7 +1,5 @@
 module github.com/sherifabdlnaby/sched
 
-go 1.16
-
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
