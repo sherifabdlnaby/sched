@@ -40,6 +40,9 @@ type Schedule struct {
 
 	// metrics
 	metrics metrics
+
+	// State
+	expectedRuntime time.Duration
 }
 
 // NewSchedule Create a new schedule for` jobFunc func()` that will run according to `timer Timer` with the supplied []Options
@@ -64,13 +67,14 @@ func NewSchedule(id string, timer Timer, jobFunc func(), opts ...Option) *Schedu
 	metrics := *newMetrics(id, options.metricsScope)
 
 	return &Schedule{
-		ID:         id,
-		state:      NEW,
-		jobSrcFunc: jobFunc,
-		timer:      timer,
-		activeJobs: *newJobMap(),
-		logger:     logger,
-		metrics:    metrics,
+		ID:              id,
+		state:           NEW,
+		jobSrcFunc:      jobFunc,
+		timer:           timer,
+		activeJobs:      *newJobMap(),
+		logger:          logger,
+		metrics:         metrics,
+		expectedRuntime: options.expectedRunDuration,
 	}
 }
 
@@ -194,15 +198,29 @@ func (s *Schedule) runJobInstance() {
 	s.activeJobs.add(jobInstance)
 	defer s.activeJobs.delete(jobInstance)
 
+	// Logs and Metrics --------------------------------------
+	// -------------------------------------------------------
 	s.logger.Infow("Job Run Starting", "Instance", jobInstance.ID())
 	s.metrics.runs.Inc(1)
 	if s.activeJobs.len() > 1 {
 		s.metrics.overlappingCount.Inc(1)
 	}
+	if s.expectedRuntime > 0 {
+		time.AfterFunc(s.expectedRuntime, func() {
+			if jobInstance.State() == job.RUNNING {
+				s.logger.Warnw("Job Run Exceeded Expected Time", "Instance", jobInstance.ID(),
+					"Expected", s.expectedRuntime.Round(1000*time.Millisecond))
+				s.metrics.runExceedExpected.Inc(1)
+			}
+		})
+	}
+	// -------------------------------------------------------
 
 	// Synchronously Run Job Instance
 	err := jobInstance.Run()
 
+	// -------------------------------------------------------
+	// Logs and Metrics --------------------------------------
 	if err != nil {
 		s.logger.Errorw("Job Error", "Instance", jobInstance.ID(),
 			"Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond),

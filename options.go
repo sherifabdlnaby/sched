@@ -7,8 +7,9 @@ import (
 )
 
 type options struct {
-	logger       Logger
-	metricsScope tally.Scope
+	logger              Logger
+	metricsScope        tally.Scope
+	expectedRunDuration time.Duration
 	// ------------------
 	initDefaultScope       bool
 	defaultScopePrintEvery time.Duration
@@ -71,4 +72,17 @@ func WithMetrics(metricsScope tally.Scope) Option {
 // metrics logs.
 func WithConsoleMetrics(printEvery time.Duration) Option {
 	return metricsOption{metricsScope: nil, initConsoleMetrics: true, defaultScopePrintEvery: printEvery}
+}
+
+type expectedRunTime struct {
+	duration time.Duration
+}
+
+func (l expectedRunTime) apply(opts *options) {
+	opts.expectedRunDuration = l.duration
+}
+
+//WithExpectedRunTime Use to indicate the expected Runtime ( Logs a warning and adds in metrics when it exceeds )
+func WithExpectedRunTime(d time.Duration) Option {
+	return expectedRunTime{duration: d}
 }

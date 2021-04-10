@@ -22,7 +22,7 @@ func NewScheduler(opts ...Option) *Scheduler {
 }
 
 //Add Create a new schedule for` jobFunc func()` that will run according to `timer Timer` with the []Options of the Scheduler.
-func (s *Scheduler) Add(id string, timer Timer, job func()) error {
+func (s *Scheduler) Add(id string, timer Timer, job func(), extraOpts ...Option) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
@@ -31,7 +31,7 @@ func (s *Scheduler) Add(id string, timer Timer, job func()) error {
 	}
 
 	// Create schedule
-	schedule := NewSchedule(id, timer, job, s.scheduleOpts...)
+	schedule := NewSchedule(id, timer, job, append(s.scheduleOpts, extraOpts...)...)
 
 	// Add to managed schedules
 	s.schedules[id] = schedule
