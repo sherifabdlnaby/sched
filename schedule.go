@@ -12,7 +12,7 @@ import (
 // Schedule A Schedule is an object that wraps a Job (func(){}) and runs it on a schedule according to the supplied
 // Timer; With the the ability to expose metrics, and write logs to indicate job health, state, and stats.
 type Schedule struct {
-	ID string
+	id string
 
 	// Source function used to create job.Job
 	jobSrcFunc func()
@@ -67,7 +67,7 @@ func NewSchedule(id string, timer Timer, jobFunc func(), opts ...Option) *Schedu
 	metrics := *newMetrics(id, options.metricsScope)
 
 	return &Schedule{
-		ID:              id,
+		id:              id,
 		state:           NEW,
 		jobSrcFunc:      jobFunc,
 		timer:           timer,

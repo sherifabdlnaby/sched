@@ -27,7 +27,7 @@ func (s *Scheduler) Add(id string, timer Timer, job func(), extraOpts ...Option)
 	defer s.mx.Unlock()
 
 	if _, ok := s.schedules[id]; ok {
-		return fmt.Errorf("job with this ID already exists")
+		return fmt.Errorf("job with this id already exists")
 	}
 
 	// Create schedule
@@ -39,7 +39,7 @@ func (s *Scheduler) Add(id string, timer Timer, job func(), extraOpts ...Option)
 	return nil
 }
 
-//Start Start the Schedule with the given ID. Return error if no Schedule with the given ID exist.
+//Start Start the Schedule with the given id. Return error if no Schedule with the given id exist.
 func (s *Scheduler) Start(id string) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
@@ -65,7 +65,7 @@ func (s *Scheduler) StartAll() {
 	}
 }
 
-//Stop Stop the Schedule with the given ID. Return error if no Schedule with the given ID exist.
+//Stop Stop the Schedule with the given id. Return error if no Schedule with the given id exist.
 func (s *Scheduler) Stop(id string) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()

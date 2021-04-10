@@ -3,59 +3,38 @@
 
 ## Output
 
-```json
+```
 # HELP sched_run_actual_elapsed_time sched_run_actual_elapsed_time summary
 # TYPE sched_run_actual_elapsed_time summary
-sched_run_actual_elapsed_time{ID="every5s", quantile="0.5"
-} 0.205075002
-sched_run_actual_elapsed_time{
-ID="every5s", quantile="0.75"
-} 1.103087326
-sched_run_actual_elapsed_time{
-ID="every5s", quantile="0.95"
-} 2.204325295
-sched_run_actual_elapsed_time{
-ID="every5s",quantile="0.99"
-} 2.204325295
-sched_run_actual_elapsed_time{
-ID="every5s", quantile="0.999"
-} 2.204325295
-sched_run_actual_elapsed_time_sum{
-ID="every5s"
-} 3.713109351
-sched_run_actual_elapsed_time_count{
-ID="every5s"
-} 4
+sched_run_actual_elapsed_time{id="every5s",quantile="0.5"} 0.203843151
+sched_run_actual_elapsed_time{id="every5s",quantile="0.75"} 1.104031623
+sched_run_actual_elapsed_time{id="every5s",quantile="0.95"} 1.104031623
+sched_run_actual_elapsed_time{id="every5s",quantile="0.99"} 1.104031623
+sched_run_actual_elapsed_time{id="every5s",quantile="0.999"} 1.104031623
+sched_run_actual_elapsed_time_sum{id="every5s"} 1.307874774
+sched_run_actual_elapsed_time_count{id="every5s"} 2
 # HELP sched_run_errors sched_run_errors counter
 # TYPE sched_run_errors counter
-sched_run_errors{ID="every5s"} 0
+sched_run_errors{id="every5s"} 0
+# HELP sched_run_exceed_expected_time sched_run_exceed_expected_time counter
+# TYPE sched_run_exceed_expected_time counter
+sched_run_exceed_expected_time{id="every5s"} 0
 # HELP sched_run_total_elapsed_time sched_run_total_elapsed_time summary
 # TYPE sched_run_total_elapsed_time summary
-sched_run_total_elapsed_time{
-ID="every5s", quantile="0.5"
-} 0.205178562
-sched_run_total_elapsed_time{ID="every5s", quantile="0.75"
-} 1.103123691
-sched_run_total_elapsed_time{
-ID="every5s", quantile="0.95"
-} 2.204367762
-sched_run_total_elapsed_time{
-ID="every5s", quantile="0.99"
-} 2.204367762
-sched_run_total_elapsed_time{
-ID="every5s",quantile="0.999"
-} 2.204367762
-sched_run_total_elapsed_time_sum{
-ID="every5s"
-} 3.7133283589999997
-sched_run_total_elapsed_time_count{ID="every5s"} 4
+sched_run_total_elapsed_time{id="every5s",quantile="0.5"} 0.203880714
+sched_run_total_elapsed_time{id="every5s",quantile="0.75"} 1.104065614
+sched_run_total_elapsed_time{id="every5s",quantile="0.95"} 1.104065614
+sched_run_total_elapsed_time{id="every5s",quantile="0.99"} 1.104065614
+sched_run_total_elapsed_time{id="every5s",quantile="0.999"} 1.104065614
+sched_run_total_elapsed_time_sum{id="every5s"} 1.307946328
+sched_run_total_elapsed_time_count{id="every5s"} 2
 # HELP sched_runs sched_runs counter
 # TYPE sched_runs counter
-sched_runs{ID="every5s"} 3
+sched_runs{id="every5s"} 2
 # HELP sched_runs_overlapping sched_runs_overlapping counter
 # TYPE sched_runs_overlapping counter
-sched_runs_overlapping{ID="every5s"} 0
+sched_runs_overlapping{id="every5s"} 0
 # HELP sched_up sched_up gauge
 # TYPE sched_up gauge
-sched_up{ID="every5s"} 1
+sched_up{id="every5s"} 1
 ```

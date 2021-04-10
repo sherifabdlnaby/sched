@@ -40,7 +40,7 @@ func NewJobWithID(id string, jobFunc func()) *Job {
 	}
 }
 
-//NewJob Create new Job, ID is assigned a UUID instead.
+//NewJob Create new Job, id is assigned a UUID instead.
 func NewJob(jobFunc func()) *Job {
 	return NewJobWithID(uuid.New().String(), jobFunc)
 }

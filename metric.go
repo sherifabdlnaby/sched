@@ -20,13 +20,13 @@ type metrics struct {
 func newMetrics(name string, metricsScope tally.Scope) *metrics {
 	subScope := metricsScope.SubScope("sched")
 	return &metrics{
-		up:                subScope.Tagged(map[string]string{"ID": name}).Gauge("up"),
-		runs:              subScope.Tagged(map[string]string{"ID": name}).Counter("runs"),
-		overlappingCount:  subScope.Tagged(map[string]string{"ID": name}).Counter("runs_overlapping"),
-		runActualElapsed:  subScope.Tagged(map[string]string{"ID": name}).Timer("run_actual_elapsed_time"),
-		runTotalElapsed:   subScope.Tagged(map[string]string{"ID": name}).Timer("run_total_elapsed_time"),
-		runErrors:         subScope.Tagged(map[string]string{"ID": name}).Counter("run_errors"),
-		runExceedExpected: subScope.Tagged(map[string]string{"ID": name}).Counter("run_exceed_expected_time"),
+		up:                subScope.Tagged(map[string]string{"id": name}).Gauge("up"),
+		runs:              subScope.Tagged(map[string]string{"id": name}).Counter("runs"),
+		overlappingCount:  subScope.Tagged(map[string]string{"id": name}).Counter("runs_overlapping"),
+		runActualElapsed:  subScope.Tagged(map[string]string{"id": name}).Timer("run_actual_elapsed_time"),
+		runTotalElapsed:   subScope.Tagged(map[string]string{"id": name}).Timer("run_total_elapsed_time"),
+		runErrors:         subScope.Tagged(map[string]string{"id": name}).Counter("run_errors"),
+		runExceedExpected: subScope.Tagged(map[string]string{"id": name}).Counter("run_exceed_expected_time"),
 	}
 }
 
