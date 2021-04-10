@@ -196,6 +196,18 @@ sched_up{id="every5s"} 1
 
 # Examples
 
+1. [schedule-console-metrics](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-console-metrics)
+1. [schedule-cron](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-cron)
+1. [schedule-fixed](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-fixed)
+1. [schedule-four-mixed-timers](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-four-mixed-timers)
+1. [schedule-once](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-console-metrics)
+1. [schedule-overlapping](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-overlapping)
+1. [schedule-panic](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-panic)
+1. [schedule-prom-metrics](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-prom-metrics)
+1. [schedule-warn-expected](https://github.com/sherifabdlnaby/sched/tree/main/examples/schedule-warn-expected)
+1. [scheduler](https://github.com/sherifabdlnaby/sched/tree/main/examples/scheduler)
+1. [scheduler-extra-opts](https://github.com/sherifabdlnaby/sched/tree/main/examples/scheduler-extra-opts)
+
 ## Inline Example
 
 ```go
