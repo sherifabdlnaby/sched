@@ -40,8 +40,7 @@ func (j *Job) ID() string {
 	return j.id
 }
 
-//Duration Return the Elapsed Duration of a Job
-func (j *Job) Duration() time.Duration {
+func (j *Job) ActualElapsed() time.Duration {
 	j.mx.RLock()
 	defer j.mx.RUnlock()
 
@@ -54,6 +53,18 @@ func (j *Job) Duration() time.Duration {
 	return -1
 }
 
+func (j *Job) TotalElapsed() time.Duration {
+	j.mx.RLock()
+	defer j.mx.RUnlock()
+
+	if !j.startTime.IsZero() {
+		if j.finishTime.IsZero() {
+			return time.Since(j.createTime)
+		}
+		return j.finishTime.Sub(j.createTime)
+	}
+	return -1
+}
 func (j *Job) Run() error {
 	return j.run()
 }

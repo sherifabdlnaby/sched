@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/sherifabdlnaby/sched/job"
+	"github.com/uber-go/tally"
 	"sync"
 	"time"
 )
@@ -36,10 +37,13 @@ type Schedule struct {
 
 	// State
 	state State
+
+	// metrics
+	metrics metrics
 }
 
 // NewScheduleWithID NewSchedule
-func NewScheduleWithID(ID string, jobFunc func(), timer Timer, logger Logger) *Schedule {
+func NewScheduleWithID(ID string, jobFunc func(), timer Timer, logger Logger, metricsScope tally.Scope) *Schedule {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Schedule{
 		ID:         ID,
@@ -49,12 +53,13 @@ func NewScheduleWithID(ID string, jobFunc func(), timer Timer, logger Logger) *S
 		context:    ctx,
 		cancel:     cancel,
 		activeJobs: *newJobMap(),
-		logger:     logger.With("Job", ID),
+		logger:     logger.With("Schedule", ID),
+		metrics:    *newMetrics(ID, metricsScope),
 	}
 }
 
-func NewSchedule(jobFunc func(), timer Timer, logger Logger) *Schedule {
-	return NewScheduleWithID(uuid.New().String(), jobFunc, timer, logger)
+func NewSchedule(jobFunc func(), timer Timer, logger Logger, metricsScope tally.Scope) *Schedule {
+	return NewScheduleWithID(uuid.New().String(), jobFunc, timer, logger, metricsScope)
 }
 
 func (s *Schedule) Start() {
@@ -67,6 +72,7 @@ func (s *Schedule) Start() {
 	}
 	s.logger.Infow("Job Schedule Started")
 	s.state = STARTED
+	s.metrics.scheduleUp.Update(1)
 	go s.controlLoop()
 }
 
@@ -89,6 +95,7 @@ func (s *Schedule) Stop() {
 	s.wg.Wait()
 	s.state = STOPPED
 	s.logger.Infow("Job Schedule Stopped")
+	s.metrics.scheduleUp.Update(0)
 }
 
 //controlLoop scheduler control loop
@@ -125,11 +132,15 @@ func (s *Schedule) runJobInstance() {
 	defer s.activeJobs.delete(jobInstance)
 
 	s.logger.Infow("Job Run Starting", "Instance", jobInstance.ID())
+	s.metrics.scheduleRunCount.Inc(1)
 
 	err := jobInstance.Run()
 
 	if err != nil {
-		s.logger.Errorw("Job Error", "Instance", jobInstance.ID(), "Duration", jobInstance.Duration().Round(1*time.Millisecond), "State", jobInstance.State().String(), "error", err.Error())
+		s.logger.Errorw("Job Error", "Instance", jobInstance.ID(), "Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond), "State", jobInstance.State().String(), "error", err.Error())
+		s.metrics.scheduleRunErrors.Inc(1)
 	}
-	s.logger.Infow("Job Finished", "Instance", jobInstance.ID(), "Duration", jobInstance.Duration().Round(1*time.Millisecond), "State", jobInstance.State().String())
+	s.logger.Infow("Job Finished", "Instance", jobInstance.ID(), "Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond), "State", jobInstance.State().String())
+	s.metrics.scheduleRunActualElapsed.Record(jobInstance.ActualElapsed())
+	s.metrics.scheduleRunTotalElapsed.Record(jobInstance.TotalElapsed())
 }
