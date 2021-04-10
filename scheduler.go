@@ -18,25 +18,25 @@ func NewScheduler(opts ...Option) *Scheduler {
 	}
 }
 
-func (s *Scheduler) Add(ID string, timer Timer, job func()) {
+func (s *Scheduler) Add(id string, timer Timer, job func()) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
 	// Create schedule
-	schedule := NewSchedule(ID, timer, job, s.scheduleOpts...)
+	schedule := NewSchedule(id, timer, job, s.scheduleOpts...)
 
 	// Add to managed schedules
-	s.schedules[ID] = schedule
+	s.schedules[id] = schedule
 }
 
-func (s *Scheduler) Start(ID string) error {
+func (s *Scheduler) Start(id string) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
-	// Find Schedule by ID
-	schedule, found := s.schedules[ID]
+	// Find Schedule by id
+	schedule, found := s.schedules[id]
 	if !found {
-		return fmt.Errorf("schdule with this ID does not exit")
+		return fmt.Errorf("schdule with this id does not exit")
 	}
 
 	// Start it ¯\_(ツ)_/¯
@@ -51,15 +51,14 @@ func (s *Scheduler) StartAll() {
 	for _, schedule := range s.schedules {
 		schedule.Start()
 	}
-	return
 }
 
-func (s *Scheduler) Stop(ID string) error {
+func (s *Scheduler) Stop(id string) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
-	schedule, found := s.schedules[ID]
+	schedule, found := s.schedules[id]
 	if !found {
-		return fmt.Errorf("schdule with this ID does not exit")
+		return fmt.Errorf("schdule with this id does not exit")
 	}
 	schedule.Stop()
 	return nil
@@ -77,5 +76,4 @@ func (s *Scheduler) StopAll() {
 		}(schedule)
 	}
 	wg.Wait()
-	return
 }

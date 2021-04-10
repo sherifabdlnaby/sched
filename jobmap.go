@@ -1,8 +1,9 @@
 package sched
 
 import (
-	"github.com/sherifabdlnaby/sched/job"
 	"sync"
+
+	"github.com/sherifabdlnaby/sched/job"
 )
 
 type jobMap struct {
@@ -16,16 +17,16 @@ func newJobMap() *jobMap {
 	}
 }
 
-func (jm *jobMap) add(job *job.Job) {
+func (jm *jobMap) add(j *job.Job) {
 	jm.mx.Lock()
 	defer jm.mx.Unlock()
-	jm.jobs[job.ID()] = job
+	jm.jobs[j.ID()] = j
 }
 
-func (jm *jobMap) delete(job *job.Job) {
+func (jm *jobMap) delete(j *job.Job) {
 	jm.mx.Lock()
 	defer jm.mx.Unlock()
-	delete(jm.jobs, job.ID())
+	delete(jm.jobs, j.ID())
 }
 
 func (jm *jobMap) len() int {

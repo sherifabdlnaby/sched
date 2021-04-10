@@ -4,7 +4,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//Logger Sched logging interface similar to uber-go/zap, while keeping the option to change the logging implementation
+// Logger Sched logging interface similar to uber-go/zap, while keeping the option to change the logging implementation
 // It is a sub-interface of uber-go/zap SugaredLogger.
 type Logger interface {
 	Debugw(msg string, keysAndValues ...interface{})

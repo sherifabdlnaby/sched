@@ -2,9 +2,10 @@ package job
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Job struct {

@@ -2,8 +2,9 @@ package sched
 
 import (
 	"fmt"
-	"github.com/gorhill/cronexpr"
 	"time"
+
+	"github.com/gorhill/cronexpr"
 )
 
 type Timer interface {
@@ -25,7 +26,7 @@ func NewOnce(delay time.Duration) (*Once, error) {
 }
 
 func NewOnceTime(t time.Time) (*Once, error) {
-	remaining := t.Sub(time.Now())
+	remaining := time.Until(t)
 	if remaining < 0 {
 		return &Once{
 			delay: remaining,
@@ -75,7 +76,7 @@ type Cron struct {
 func NewCron(cronExpression string) (*Cron, error) {
 	expression, err := cronexpr.Parse(cronExpression)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cron expression invalid: %w", err)
 	}
 	return &Cron{expression: *expression}, nil
 }

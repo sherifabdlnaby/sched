@@ -1,3 +1,24 @@
+### General
+bin
+.env
+
+### JetBrains template
+# User-specific stuff
+.idea
+
+
+### Windows template
+# Windows thumbnail cache files
+Thumbs.db
+
+### macOS template
+# General
+.DS_Store
+
+# Thumbnails
+._*
+
+### Go template
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -11,5 +32,5 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+### VisualStudioCode template
+.vscode/*

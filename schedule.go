@@ -1,10 +1,11 @@
 package sched
 
 import (
-	"github.com/sherifabdlnaby/sched/job"
-	"github.com/uber-go/tally"
 	"sync"
 	"time"
+
+	"github.com/sherifabdlnaby/sched/job"
+	"github.com/uber-go/tally"
 )
 
 type Schedule struct {
@@ -39,7 +40,7 @@ type Schedule struct {
 }
 
 // NewSchedule NewSchedule
-func NewSchedule(ID string, timer Timer, jobFunc func(), opts ...Option) *Schedule {
+func NewSchedule(id string, timer Timer, jobFunc func(), opts ...Option) *Schedule {
 	var options = defaultOptions()
 
 	// Apply Options
@@ -47,11 +48,8 @@ func NewSchedule(ID string, timer Timer, jobFunc func(), opts ...Option) *Schedu
 		option.apply(options)
 	}
 
-	// Set ID
-	id := ID
-
 	// Set Logger
-	logger := options.logger.With("ID", id)
+	logger := options.logger.With("id", id)
 
 	// Set Metrics
 	// // Init Default Scope if true, ignore io.closer on purpose.
@@ -60,7 +58,7 @@ func NewSchedule(ID string, timer Timer, jobFunc func(), opts ...Option) *Schedu
 			Reporter: newConsoleStatsReporter(logger.Named("metrics")),
 		}, options.defaultScopePrintEvery)
 	}
-	metrics := *newMetrics(ID, options.metricsScope)
+	metrics := *newMetrics(id, options.metricsScope)
 
 	return &Schedule{
 		ID:         id,
@@ -118,11 +116,10 @@ func (s *Schedule) Stop() {
 	s.state = STOPPED
 	s.logger.Infow("Job Schedule Stopped")
 	s.metrics.up.Update(0)
-	s.logger.Sync()
+	_ = s.logger.Sync()
 }
 
 func (s *Schedule) Finish() {
-
 	// Stop First
 	s.Stop()
 
@@ -137,7 +134,7 @@ func (s *Schedule) Finish() {
 	s.logger.Infow("Job Schedule Finished")
 }
 
-//scheduleLoop scheduler control loop
+// scheduleLoop scheduler control loop
 func (s *Schedule) scheduleLoop() {
 	// Main Loop
 	for {
@@ -146,7 +143,8 @@ func (s *Schedule) scheduleLoop() {
 			s.logger.Infow("No more Jobs will be scheduled")
 			break
 		}
-		nextRunDuration := zeroNegativeDuration(nextRun.Sub(time.Now()))
+		nextRunDuration := time.Until(nextRun)
+		nextRunDuration = negativeToZero(nextRunDuration)
 		nextRunChan := time.After(nextRunDuration)
 		s.logger.Infow("Job Next Run Scheduled", "After", nextRunDuration.Round(1*time.Second).String(), "At", nextRun.Format(time.RFC3339))
 		select {
@@ -174,7 +172,6 @@ func (s *Schedule) runJobInstance() {
 	defer s.activeJobs.delete(jobInstance)
 
 	s.logger.Infow("Job Run Starting", "Instance", jobInstance.ID())
-	s.logger.Sync()
 	s.metrics.runs.Inc(1)
 	if s.activeJobs.len() > 1 {
 		s.metrics.overlappingCount.Inc(1)
@@ -184,15 +181,19 @@ func (s *Schedule) runJobInstance() {
 	err := jobInstance.Run()
 
 	if err != nil {
-		s.logger.Errorw("Job Error", "Instance", jobInstance.ID(), "Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond), "State", jobInstance.State().String(), "error", err.Error())
+		s.logger.Errorw("Job Error", "Instance", jobInstance.ID(),
+			"Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond),
+			"State", jobInstance.State().String(), "error", err.Error())
 		s.metrics.runErrors.Inc(1)
 	}
-	s.logger.Infow("Job Finished", "Instance", jobInstance.ID(), "Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond), "State", jobInstance.State().String())
+	s.logger.Infow("Job Finished", "Instance", jobInstance.ID(),
+		"Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond),
+		"State", jobInstance.State().String())
 	s.metrics.runActualElapsed.Record(jobInstance.ActualElapsed())
 	s.metrics.runTotalElapsed.Record(jobInstance.TotalElapsed())
 }
 
-func zeroNegativeDuration(nextRunDuration time.Duration) time.Duration {
+func negativeToZero(nextRunDuration time.Duration) time.Duration {
 	if nextRunDuration < 0 {
 		nextRunDuration = 0
 	}

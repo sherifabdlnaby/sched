@@ -2,8 +2,9 @@ package sched
 
 import (
 	"fmt"
-	"github.com/uber-go/tally"
 	"time"
+
+	"github.com/uber-go/tally"
 )
 
 type metrics struct {
