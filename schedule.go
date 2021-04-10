@@ -18,7 +18,7 @@ type Schedule struct {
 	timer Timer
 
 	// SignalChan for termination
-	cancelLoopSignal chan interface{}
+	stopScheduleSignal chan interface{}
 
 	// Concurrent safe JobMap
 	activeJobs jobMap
@@ -82,16 +82,24 @@ func (s *Schedule) Start() {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
+	if s.state == FINISHED {
+		s.logger.Warnw("Attempting to start a finished schedule")
+		return
+	}
+
 	if s.state == STARTED {
 		s.logger.Warnw("Attempting to start an already started schedule")
 		return
 	}
+
 	s.logger.Infow("Job Schedule Started")
 	s.state = STARTED
 	s.metrics.up.Update(1)
-	s.cancelLoopSignal = make(chan interface{})
 
-	go s.controlLoop()
+	// Create stopSchedule signal channel, buffer = 1 to allow non-blocking signaling.
+	s.stopScheduleSignal = make(chan interface{}, 1)
+
+	go s.scheduleLoop()
 	go func() {}()
 }
 
@@ -99,14 +107,15 @@ func (s *Schedule) Stop() {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
-	if s.state == STOPPED {
+	if s.state == STOPPED || s.state == FINISHED {
 		return
 	}
 	s.state = STOPPING
 
 	// Stop control loop
 	s.logger.Infow("Stopping Schedule...")
-	s.cancelLoopSignal <- struct{}{}
+	s.stopScheduleSignal <- struct{}{}
+	close(s.stopScheduleSignal)
 
 	// Wait for all instances
 	s.logger.Infow("Waiting active jobs to finish...")
@@ -117,16 +126,32 @@ func (s *Schedule) Stop() {
 	s.logger.Sync()
 }
 
-//controlLoop scheduler control loop
-func (s *Schedule) controlLoop() {
+func (s *Schedule) Finish() {
+	// Stop First
+	s.Stop()
+
+	s.mx.Lock()
+	defer s.mx.Unlock()
+	s.state = FINISHED
+
+	// TODO finish logic (stop/close metrics emitting)
+	s.logger.Infow("Job Schedule Finished")
+}
+
+//scheduleLoop scheduler control loop
+func (s *Schedule) scheduleLoop() {
 	// Main Loop
 	for {
-		nextRun := s.timer.Next()
-		nextRunDuration := nextRun.Sub(time.Now())
+		nextRun, done := s.timer.Next()
+		if done {
+			s.logger.Infow("No more Jobs will be scheduled")
+			break
+		}
+		nextRunDuration := zeroNegativeDuration(nextRun.Sub(time.Now()))
 		nextRunChan := time.After(nextRunDuration)
 		s.logger.Infow("Job Next Run Scheduled", "After", nextRunDuration.Round(1*time.Second).String(), "At", nextRun.Format(time.RFC3339))
 		select {
-		case <-s.cancelLoopSignal:
+		case <-s.stopScheduleSignal:
 			s.logger.Infow("Job Next Run Canceled", "At", nextRun.Format(time.RFC3339))
 			return
 		case <-nextRunChan:
@@ -134,6 +159,8 @@ func (s *Schedule) controlLoop() {
 			go s.runJobInstance()
 		}
 	}
+
+	s.Finish()
 }
 
 func (s *Schedule) runJobInstance() {
@@ -148,6 +175,7 @@ func (s *Schedule) runJobInstance() {
 	defer s.activeJobs.delete(jobInstance)
 
 	s.logger.Infow("Job Run Starting", "Instance", jobInstance.ID())
+	s.logger.Sync()
 	s.metrics.runs.Inc(1)
 	if s.activeJobs.len() > 1 {
 		s.metrics.overlappingCount.Inc(1)
@@ -163,4 +191,11 @@ func (s *Schedule) runJobInstance() {
 	s.logger.Infow("Job Finished", "Instance", jobInstance.ID(), "Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond), "State", jobInstance.State().String())
 	s.metrics.runActualElapsed.Record(jobInstance.ActualElapsed())
 	s.metrics.runTotalElapsed.Record(jobInstance.TotalElapsed())
+}
+
+func zeroNegativeDuration(nextRunDuration time.Duration) time.Duration {
+	if nextRunDuration < 0 {
+		nextRunDuration = 0
+	}
+	return nextRunDuration
 }

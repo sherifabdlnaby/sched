@@ -7,6 +7,7 @@ const (
 	STARTED
 	STOPPING
 	STOPPED
+	FINISHED
 )
 
 func (s State) String() string {
@@ -19,6 +20,8 @@ func (s State) String() string {
 		return "STOPPING"
 	case STOPPED:
 		return "STOPPED"
+	case FINISHED:
+		return "FINISHED"
 	default:
 		return "UNKNOWN"
 	}
