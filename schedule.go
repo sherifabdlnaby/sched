@@ -1,6 +1,7 @@
 package sched
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -126,8 +127,11 @@ func (s *Schedule) Stop() {
 	s.stopScheduleSignal <- struct{}{}
 	close(s.stopScheduleSignal)
 
-	// Wait for all instances
-	s.logger.Infow("Waiting active jobs to finish...")
+	// Print No. of Active Jobs
+	if noOfActiveJobs := s.activeJobs.len(); s.activeJobs.len() > 0 {
+		s.logger.Infow(fmt.Sprintf("Waiting for '%d' active jobs still running...", noOfActiveJobs))
+	}
+
 	s.wg.Wait()
 	s.state = STOPPED
 	s.logger.Infow("Job Schedule Stopped")

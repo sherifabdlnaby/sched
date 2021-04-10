@@ -26,7 +26,7 @@ func (s *Scheduler) Add(id string, timer Timer, job func()) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
-	if _, ok := s.schedules[id]; !ok {
+	if _, ok := s.schedules[id]; ok {
 		return fmt.Errorf("job with this ID already exists")
 	}
 
