@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"github.com/uber-go/tally"
 	"time"
 )
@@ -9,7 +8,6 @@ import (
 type options struct {
 	logger       Logger
 	metricsScope tally.Scope
-	context      context.Context
 	// ------------------
 	initDefaultScope       bool
 	defaultScopePrintEvery time.Duration
@@ -18,17 +16,11 @@ type options struct {
 func defaultOptions() *options {
 	logger := DefaultLogger()
 
-	// TODO cancel loop correctly
-	ctx := context.Background()
-
-	nopMetrics, _ := tally.NewRootScope(tally.ScopeOptions{
-		Reporter: newConsoleStatsReporter(NopLogger()),
-	}, 0)
+	nopMetrics := tally.NoopScope
 
 	return &options{
 		logger:       logger,
 		metricsScope: nopMetrics,
-		context:      ctx,
 	}
 }
 

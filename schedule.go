@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"github.com/google/uuid"
 	"github.com/sherifabdlnaby/sched/job"
 	"github.com/uber-go/tally"
@@ -18,10 +17,8 @@ type Schedule struct {
 	// Timer used to trigger Jobs
 	timer Timer
 
-	// context, used solely for cancellation of control-loop for now.
-	// Can't be passed from caller(for now)
-	context context.Context
-	cancel  context.CancelFunc
+	// SignalChan for termination
+	cancelLoopSignal chan interface{}
 
 	// Concurrent safe JobMap
 	activeJobs jobMap
@@ -58,25 +55,19 @@ func NewScheduleWithID(ID string, jobFunc func(), timer Timer, opts ...Option) *
 	logger := options.logger.With("ID", id)
 
 	// Set Metrics
+	// // Init Default Scope if true, ignore io.closer on purpose.
 	if options.initDefaultScope {
-		// TODO closer
-
-		//TODO refactor into meth
 		options.metricsScope, _ = tally.NewRootScope(tally.ScopeOptions{
 			Reporter: newConsoleStatsReporter(logger.Named("metrics")),
 		}, options.defaultScopePrintEvery)
 	}
 	metrics := *newMetrics(ID, options.metricsScope)
 
-	context, cancel := context.WithCancel(options.context)
-
 	return &Schedule{
 		ID:         id,
 		state:      NEW,
 		jobSrcFunc: jobFunc,
 		timer:      timer,
-		context:    context,
-		cancel:     cancel,
 		activeJobs: *newJobMap(),
 		logger:     logger,
 		metrics:    metrics,
@@ -97,8 +88,11 @@ func (s *Schedule) Start() {
 	}
 	s.logger.Infow("Job Schedule Started")
 	s.state = STARTED
-	s.metrics.scheduleUp.Update(1)
+	s.metrics.up.Update(1)
+	s.cancelLoopSignal = make(chan interface{})
+
 	go s.controlLoop()
+	go func() {}()
 }
 
 func (s *Schedule) Stop() {
@@ -106,43 +100,38 @@ func (s *Schedule) Stop() {
 	defer s.mx.Unlock()
 
 	if s.state == STOPPED {
-		s.logger.Warnw("Attempting to stop an already stopped schedule")
 		return
 	}
-
 	s.state = STOPPING
-	// Cancel Main Context
-	s.logger.Infow("Canceling scheduled runs...")
-	s.cancel()
+
+	// Stop control loop
+	s.logger.Infow("Stopping Schedule...")
+	s.cancelLoopSignal <- struct{}{}
 
 	// Wait for all instances
 	s.logger.Infow("Waiting active jobs to finish...")
 	s.wg.Wait()
 	s.state = STOPPED
 	s.logger.Infow("Job Schedule Stopped")
-	s.metrics.scheduleUp.Update(0)
+	s.metrics.up.Update(0)
+	s.logger.Sync()
 }
 
 //controlLoop scheduler control loop
 func (s *Schedule) controlLoop() {
 	// Main Loop
 	for {
+		nextRun := s.timer.Next()
+		nextRunDuration := nextRun.Sub(time.Now())
+		nextRunChan := time.After(nextRunDuration)
+		s.logger.Infow("Job Next Run Scheduled", "After", nextRunDuration.Round(1*time.Second).String(), "At", nextRun.Format(time.RFC3339))
 		select {
-		case <-s.context.Done():
+		case <-s.cancelLoopSignal:
+			s.logger.Infow("Job Next Run Canceled", "At", nextRun.Format(time.RFC3339))
 			return
-		default:
-			nextRun := s.timer.Next()
-			nextRunDuration := nextRun.Sub(time.Now())
-			nextRunChan := time.After(nextRunDuration)
-			s.logger.Infow("Job Next Run Scheduled", "After", nextRunDuration.Round(1*time.Second).String(), "At", nextRun.Format(time.RFC3339))
-			select {
-			case <-s.context.Done():
-				s.logger.Infow("Job Next Run Canceled", "At", nextRun.Format(time.RFC3339))
-				return
-			case <-nextRunChan:
-				// Run job
-				go s.runJobInstance()
-			}
+		case <-nextRunChan:
+			// Run job
+			go s.runJobInstance()
 		}
 	}
 }
@@ -151,21 +140,27 @@ func (s *Schedule) runJobInstance() {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
+	// Create a new instance of s.jobSrcFunc
 	jobInstance := job.NewJob(s.jobSrcFunc)
 
+	// Add to active jobs map
 	s.activeJobs.add(jobInstance)
 	defer s.activeJobs.delete(jobInstance)
 
 	s.logger.Infow("Job Run Starting", "Instance", jobInstance.ID())
-	s.metrics.scheduleRunCount.Inc(1)
+	s.metrics.runs.Inc(1)
+	if s.activeJobs.len() > 1 {
+		s.metrics.overlappingCount.Inc(1)
+	}
 
+	// Synchronously Run Job Instance
 	err := jobInstance.Run()
 
 	if err != nil {
 		s.logger.Errorw("Job Error", "Instance", jobInstance.ID(), "Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond), "State", jobInstance.State().String(), "error", err.Error())
-		s.metrics.scheduleRunErrors.Inc(1)
+		s.metrics.runErrors.Inc(1)
 	}
 	s.logger.Infow("Job Finished", "Instance", jobInstance.ID(), "Duration", jobInstance.ActualElapsed().Round(1*time.Millisecond), "State", jobInstance.State().String())
-	s.metrics.scheduleRunActualElapsed.Record(jobInstance.ActualElapsed())
-	s.metrics.scheduleRunTotalElapsed.Record(jobInstance.TotalElapsed())
+	s.metrics.runActualElapsed.Record(jobInstance.ActualElapsed())
+	s.metrics.runTotalElapsed.Record(jobInstance.TotalElapsed())
 }
