@@ -7,8 +7,6 @@ import (
 )
 
 type metrics struct {
-	// metricsReporter
-	metricsScope             tally.Scope
 	scheduleUp               tally.Gauge
 	scheduleRunCount         tally.Counter
 	scheduleRunActualElapsed tally.Timer
@@ -19,7 +17,6 @@ type metrics struct {
 func newMetrics(name string, metricsScope tally.Scope) *metrics {
 	subScope := metricsScope.SubScope("sched")
 	return &metrics{
-		metricsScope:             subScope,
 		scheduleUp:               subScope.Tagged(map[string]string{"ID": name}).Gauge("up"),
 		scheduleRunCount:         subScope.Tagged(map[string]string{"ID": name}).Counter("runs"),
 		scheduleRunActualElapsed: subScope.Tagged(map[string]string{"ID": name}).Timer("run_actual_elapsed_time"),

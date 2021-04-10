@@ -43,23 +43,48 @@ type Schedule struct {
 }
 
 // NewScheduleWithID NewSchedule
-func NewScheduleWithID(ID string, jobFunc func(), timer Timer, logger Logger, metricsScope tally.Scope) *Schedule {
-	ctx, cancel := context.WithCancel(context.Background())
+func NewScheduleWithID(ID string, jobFunc func(), timer Timer, opts ...Option) *Schedule {
+	var options = defaultOptions()
+
+	// Apply Options
+	for _, option := range opts {
+		option.apply(options)
+	}
+
+	// Set ID
+	id := ID
+
+	// Set Logger
+	logger := options.logger.With("ID", id)
+
+	// Set Metrics
+	if options.initDefaultScope {
+		// TODO closer
+
+		//TODO refactor into meth
+		options.metricsScope, _ = tally.NewRootScope(tally.ScopeOptions{
+			Reporter: newConsoleStatsReporter(logger.Named("metrics")),
+		}, options.defaultScopePrintEvery)
+	}
+	metrics := *newMetrics(ID, options.metricsScope)
+
+	context, cancel := context.WithCancel(options.context)
+
 	return &Schedule{
-		ID:         ID,
+		ID:         id,
 		state:      NEW,
 		jobSrcFunc: jobFunc,
 		timer:      timer,
-		context:    ctx,
+		context:    context,
 		cancel:     cancel,
 		activeJobs: *newJobMap(),
-		logger:     logger.With("Schedule", ID),
-		metrics:    *newMetrics(ID, metricsScope),
+		logger:     logger,
+		metrics:    metrics,
 	}
 }
 
-func NewSchedule(jobFunc func(), timer Timer, logger Logger, metricsScope tally.Scope) *Schedule {
-	return NewScheduleWithID(uuid.New().String(), jobFunc, timer, logger, metricsScope)
+func NewSchedule(jobFunc func(), timer Timer, opts ...Option) *Schedule {
+	return NewScheduleWithID(uuid.New().String(), jobFunc, timer, opts...)
 }
 
 func (s *Schedule) Start() {

@@ -31,7 +31,7 @@ func (l logger) Named(name string) Logger {
 }
 
 func DefaultLogger() Logger {
-	// TODO suppress debug level
+	// TODO control verbosity
 	loggerBase, _ := zap.NewDevelopment()
 	sugarLogger := loggerBase.Sugar().Named("sched")
 	return &logger{
@@ -41,7 +41,7 @@ func DefaultLogger() Logger {
 
 func NopLogger() Logger {
 	loggerBase := zap.NewNop()
-	sugarLogger := loggerBase.Sugar().Named("sched")
+	sugarLogger := loggerBase.Sugar()
 	return &logger{
 		sugarLogger,
 	}
