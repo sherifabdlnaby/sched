@@ -9,10 +9,6 @@ func (e ErrorJobPanic) Error() string {
 	return e.Message
 }
 
-func (e ErrorJobPanic) Unwrap() error {
-	return e
-}
-
 //ErrorJobStarted Error returned when a has already started.
 type ErrorJobStarted struct {
 	Message string
@@ -20,8 +16,4 @@ type ErrorJobStarted struct {
 
 func (e ErrorJobStarted) Error() string {
 	return e.Message
-}
-
-func (e ErrorJobStarted) Unwrap() error {
-	return e
 }
