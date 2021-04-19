@@ -63,8 +63,10 @@ func (l LruLogger) Warnw(msg string, keysAndValues ...interface{}) {
 	logger.Warn(msg)
 }
 func (l *LruLogger) With(args ...interface{}) Logger {
-	for i := 0; i < len(args)/2; i++ {
-		l.jl = l.jl.WithField(args[i].(string), args[i+1].(string))
+	for i := 0; i < len(args); i++ {
+		if i%2 == 0 {
+			l.jl = l.jl.WithField(args[i].(string), args[i+1])
+		}
 	}
 	return l
 }
@@ -76,7 +78,7 @@ func (l *LruLogger) Sync() error {
 	return nil
 }
 
-//DefaultLogger Return Default Sched Logger based on Zap's sugared logger
+//LogrusLogger Return logger Sched Logger based on logrus
 func LogrusLogger() Logger {
 	// TODO control verbosity
 	return &LruLogger{jl: logrus.NewEntry(logrus.New())}
