@@ -4,11 +4,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type LruLogger struct {
+type lruLogger struct {
 	jl *logrus.Entry
 }
 
-func (l *LruLogger) Debugw(msg string, keysAndValues ...interface{}) {
+func (l *lruLogger) Debugw(msg string, keysAndValues ...interface{}) {
 	logger := l.jl
 	for i := 0; i < len(keysAndValues); i++ {
 		if i%2 == 0 {
@@ -17,7 +17,7 @@ func (l *LruLogger) Debugw(msg string, keysAndValues ...interface{}) {
 	}
 	logger.Debug(msg)
 }
-func (l LruLogger) Errorw(msg string, keysAndValues ...interface{}) {
+func (l lruLogger) Errorw(msg string, keysAndValues ...interface{}) {
 	logger := l.jl
 	for i := 0; i < len(keysAndValues); i++ {
 		if i%2 == 0 {
@@ -26,7 +26,7 @@ func (l LruLogger) Errorw(msg string, keysAndValues ...interface{}) {
 	}
 	logger.Error(msg)
 }
-func (l LruLogger) Fatalw(msg string, keysAndValues ...interface{}) {
+func (l lruLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 	logger := l.jl
 	for i := 0; i < len(keysAndValues); i++ {
 		if i%2 == 0 {
@@ -35,7 +35,7 @@ func (l LruLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 	}
 	logger.Fatal(msg)
 }
-func (l LruLogger) Infow(msg string, keysAndValues ...interface{}) {
+func (l lruLogger) Infow(msg string, keysAndValues ...interface{}) {
 	logger := l.jl
 	for i := 0; i < len(keysAndValues); i++ {
 		if i%2 == 0 {
@@ -44,7 +44,7 @@ func (l LruLogger) Infow(msg string, keysAndValues ...interface{}) {
 	}
 	logger.Info(msg)
 }
-func (l LruLogger) Panicw(msg string, keysAndValues ...interface{}) {
+func (l lruLogger) Panicw(msg string, keysAndValues ...interface{}) {
 	logger := l.jl
 	for i := 0; i < len(keysAndValues); i++ {
 		if i%2 == 0 {
@@ -53,7 +53,7 @@ func (l LruLogger) Panicw(msg string, keysAndValues ...interface{}) {
 	}
 	logger.Panic(msg)
 }
-func (l LruLogger) Warnw(msg string, keysAndValues ...interface{}) {
+func (l lruLogger) Warnw(msg string, keysAndValues ...interface{}) {
 	logger := l.jl
 	for i := 0; i < len(keysAndValues); i++ {
 		if i%2 == 0 {
@@ -62,7 +62,7 @@ func (l LruLogger) Warnw(msg string, keysAndValues ...interface{}) {
 	}
 	logger.Warn(msg)
 }
-func (l *LruLogger) With(args ...interface{}) Logger {
+func (l *lruLogger) With(args ...interface{}) Logger {
 	for i := 0; i < len(args); i++ {
 		if i%2 == 0 {
 			l.jl = l.jl.WithField(args[i].(string), args[i+1])
@@ -70,16 +70,22 @@ func (l *LruLogger) With(args ...interface{}) Logger {
 	}
 	return l
 }
-func (l LruLogger) Named(name string) Logger {
+func (l lruLogger) Named(name string) Logger {
 	logger := l.jl.WithField("From", name)
-	return &LruLogger{jl: logger}
+	return &lruLogger{jl: logger}
 }
-func (l *LruLogger) Sync() error {
+func (l *lruLogger) Sync() error {
 	return nil
 }
 
-//LogrusLogger Return logger Sched Logger based on logrus
-func LogrusLogger() Logger {
+//LogrusDefaultLogger Return Logger based on logrus with new instance
+func LogrusDefaultLogger() Logger {
 	// TODO control verbosity
-	return &LruLogger{jl: logrus.NewEntry(logrus.New())}
+	return &lruLogger{jl: logrus.NewEntry(logrus.New())}
+}
+
+//LogrusLogger Return Return Logger based on logrus with existing instance
+func LogrusLogger(log *logrus.Logger) Logger {
+	// TODO control verbosity
+	return &lruLogger{jl: logrus.NewEntry(log)}
 }

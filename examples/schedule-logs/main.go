@@ -41,7 +41,7 @@ func main() {
 	}
 
 	// Create Schedule
-	scheduler := sched.NewScheduler(sched.WithLogger(sched.LogrusLogger()),
+	scheduler := sched.NewScheduler(sched.WithLogger(sched.LogrusDefaultLogger()),
 		sched.WithConsoleMetrics(1*time.Minute))
 
 	_ = scheduler.Add("cronEveryMinute", cronTimer, job("every-minute-cron"))
