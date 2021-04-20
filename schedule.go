@@ -240,3 +240,7 @@ func negativeToZero(nextRunDuration time.Duration) time.Duration {
 	}
 	return nextRunDuration
 }
+// State Returns the current State of the Schedule
+func (s *Schedule) State() State {
+	return s.state
+}
