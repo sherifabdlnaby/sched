@@ -118,7 +118,7 @@ func (s *Scheduler) GetSchedule(id string) (*Schedule, error) {
 	defer s.mx.Unlock()
 	j, ok := s.schedules[id];
 	if !ok {
-		return nil, &ErrorScheduleNotFound{"Schedule Not Found"}
+		return nil, ErrorScheduleNotFound{"Schedule Not Found"}
 	}
 	return j, nil
 }
