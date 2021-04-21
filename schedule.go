@@ -41,8 +41,11 @@ type Schedule struct {
 	// metrics
 	metrics metrics
 
-	// State
+	// expected runtime
 	expectedRuntime time.Duration
+
+	// Middleware to run
+	middlewares []MiddlewareFunc
 }
 
 // NewSchedule Create a new schedule for` jobFunc func()` that will run according to `timer Timer` with the supplied []Options
@@ -75,6 +78,7 @@ func NewSchedule(id string, timer Timer, jobFunc func(), opts ...Option) *Schedu
 		logger:          logger,
 		metrics:         metrics,
 		expectedRuntime: options.expectedRunDuration,
+		middlewares: options.middlewares,
 	}
 }
 
@@ -99,7 +103,7 @@ func (s *Schedule) Start() {
 	}
 
 	s.logger.Infow("Job Schedule Started")
-	s.state = STARTED
+	s.transitionState(STARTED)
 	s.metrics.up.Update(1)
 
 	// Create stopSchedule signal channel, buffer = 1 to allow non-blocking signaling.
@@ -124,7 +128,7 @@ func (s *Schedule) Stop() {
 	if s.state == STOPPED || s.state == FINISHED || s.state == NEW {
 		return
 	}
-	s.state = STOPPING
+	s.transitionState(STOPPING)
 
 	// Stop control loop
 	s.logger.Infow("Stopping Schedule...")
@@ -137,7 +141,7 @@ func (s *Schedule) Stop() {
 	}
 
 	s.wg.Wait()
-	s.state = STOPPED
+	s.transitionState(STOPPED)
 	s.logger.Infow("Job Schedule Stopped")
 	s.metrics.up.Update(0)
 	_ = s.logger.Sync()
@@ -157,7 +161,7 @@ func (s *Schedule) Finish() {
 		return
 	}
 
-	s.state = FINISHED
+	s.transitionState(FINISHED)
 	s.logger.Infow("Job Schedule Finished")
 }
 
@@ -217,7 +221,9 @@ func (s *Schedule) runJobInstance() {
 	// -------------------------------------------------------
 
 	// Synchronously Run Job Instance
+	s.transitionState(RUNNING)
 	err := jobInstance.Run()
+	s.transitionState(STARTED)
 
 	// -------------------------------------------------------
 	// Logs and Metrics --------------------------------------
@@ -243,4 +249,22 @@ func negativeToZero(nextRunDuration time.Duration) time.Duration {
 // State Returns the current State of the Schedule
 func (s *Schedule) State() State {
 	return s.state
+}
+
+func (s *Schedule) transitionState(newstate State) (ok bool) {
+	for _, middleware := range s.middlewares {
+		err := middleware(s, newstate)
+		// Some States should not be blocked by Middleware. 
+		// We should only block, for example:
+		// NEW - Prohibit adding a new Job
+		// STARTED - Stop a Job from Starting up
+		// RUNNING - Stop a Job From Executing
+
+		if err != nil {
+			s.logger.Infow("Middleware Blocked Transition: ", err)
+			return false
+		}
+	}
+	s.state = newstate
+	return true
 }

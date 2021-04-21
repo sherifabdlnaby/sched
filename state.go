@@ -10,6 +10,9 @@ const (
 	// STARTED Start Schedule has started and is running.
 	STARTED
 
+	// RUNNING Job is actually Executing... 
+	RUNNING
+
 	// STOPPING Schedule is Stopping and is waiting for all active jobs to finish.
 	STOPPING
 
@@ -26,6 +29,8 @@ func (s State) String() string {
 		return "NEW"
 	case STARTED:
 		return "STARTED"
+	case RUNNING:
+		return "RUNNING"
 	case STOPPING:
 		return "STOPPING"
 	case STOPPED:

@@ -6,6 +6,8 @@ import (
 	"github.com/uber-go/tally"
 )
 
+type MiddlewareFunc func(s *Schedule, newstate State) (err error)
+
 type options struct {
 	logger              Logger
 	metricsScope        tally.Scope
@@ -13,6 +15,7 @@ type options struct {
 	// ------------------
 	initDefaultScope       bool
 	defaultScopePrintEvery time.Duration
+	middlewares []MiddlewareFunc
 }
 
 func defaultOptions() *options {
@@ -85,4 +88,16 @@ func (l expectedRunTime) apply(opts *options) {
 //WithExpectedRunTime Use to indicate the expected Runtime ( Logs a warning and adds in metrics when it exceeds )
 func WithExpectedRunTime(d time.Duration) Option {
 	return expectedRunTime{duration: d}
+}
+
+type middlewareOption struct {
+	middleware MiddlewareFunc
+}
+
+func (l middlewareOption) apply (opts *options) {
+	opts.middlewares = append(opts.middlewares, l.middleware)
+}
+
+func WithMiddleWare(handler MiddlewareFunc) Option {
+	return middlewareOption{middleware: handler}
 }
