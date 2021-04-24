@@ -1,6 +1,7 @@
 package sched
 
 import (
+	"context"
 	"sync"
 )
 
@@ -30,9 +31,6 @@ func (e ErrorScheduleExists) Error() string {
 	return e.Message
 }
 
-
-
-
 //NewScheduler Creates new Scheduler, opt Options are applied to *every* schedule added and created by this scheduler.
 func NewScheduler(opts ...Option) *Scheduler {
 	return &Scheduler{
@@ -42,7 +40,7 @@ func NewScheduler(opts ...Option) *Scheduler {
 }
 
 //Add Create a new schedule for` jobFunc func()` that will run according to `timer Timer` with the []Options of the Scheduler.
-func (s *Scheduler) Add(id string, timer Timer, job func(), extraOpts ...Option) error {
+func (s *Scheduler) Add(ctx context.Context, id string, timer Timer, job func(context.Context), extraOpts ...Option) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
@@ -51,7 +49,8 @@ func (s *Scheduler) Add(id string, timer Timer, job func(), extraOpts ...Option)
 	}
 
 	// Create schedule
-	schedule := NewSchedule(id, timer, job, append(s.scheduleOpts, extraOpts...)...)
+	opts := append(extraOpts, s.scheduleOpts...)
+	schedule := NewSchedule(ctx, id, timer, job, opts...)
 
 	// Add to managed schedules
 	s.schedules[id] = schedule
@@ -116,14 +115,14 @@ func (s *Scheduler) StopAll() {
 func (s *Scheduler) GetSchedule(id string) (*Schedule, error) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
-	j, ok := s.schedules[id];
+	j, ok := s.schedules[id]
 	if !ok {
 		return nil, ErrorScheduleNotFound{"Schedule Not Found"}
 	}
 	return j, nil
 }
 
-//GetAllSchedules Returns all Schedule's in the Scheduler 
+//GetAllSchedules Returns all Schedule's in the Scheduler
 func (s *Scheduler) GetAllSchedules() (map[string]*Schedule, error) {
 	s.mx.Lock()
 	defer s.mx.Unlock()

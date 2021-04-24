@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -13,13 +14,16 @@ import (
 //	2. Recover From Panics
 type Job struct {
 	id         string
-	jobFunc    func()
+	jobFunc    func(ctx context.Context)
 	createTime time.Time
 	startTime  time.Time
 	finishTime time.Time
 	state      State
 	mx         sync.RWMutex
+	ctx        context.Context
 }
+
+type JobCtxValue struct {}
 
 //State Return Job current state.
 func (j *Job) State() State {
@@ -29,7 +33,7 @@ func (j *Job) State() State {
 }
 
 //NewJobWithID Create new Job with the supplied Id.
-func NewJobWithID(id string, jobFunc func()) *Job {
+func NewJobWithID(ctx context.Context, id string, jobFunc func(context.Context)) *Job {
 	return &Job{
 		id:         id,
 		jobFunc:    jobFunc,
@@ -37,12 +41,13 @@ func NewJobWithID(id string, jobFunc func()) *Job {
 		startTime:  time.Time{},
 		finishTime: time.Time{},
 		state:      NEW,
+		ctx:        ctx,
 	}
 }
 
 //NewJob Create new Job, id is assigned a UUID instead.
-func NewJob(jobFunc func()) *Job {
-	return NewJobWithID(uuid.New().String(), jobFunc)
+func NewJob(ctx context.Context, jobFunc func(context.Context)) *Job {
+	return NewJobWithID(ctx, uuid.New().String(), jobFunc)
 }
 
 //ID Return Job ID
@@ -85,6 +90,8 @@ func (j *Job) Run() error {
 	return j.run()
 }
 
+
+
 func (j *Job) run() (err error) {
 	j.mx.Lock()
 	if j.state != NEW {
@@ -118,7 +125,7 @@ func (j *Job) run() (err error) {
 	j.mx.Unlock()
 
 	// Run Job
-	j.jobFunc()
+	j.jobFunc(context.WithValue(j.ctx, JobCtxValue{}, j))
 
 	return nil
 }

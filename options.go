@@ -6,8 +6,6 @@ import (
 	"github.com/uber-go/tally"
 )
 
-type MiddlewareFunc func(s *Schedule, newstate State) (err error)
-
 type options struct {
 	logger              Logger
 	metricsScope        tally.Scope
@@ -15,7 +13,9 @@ type options struct {
 	// ------------------
 	initDefaultScope       bool
 	defaultScopePrintEvery time.Duration
-	middlewares []MiddlewareFunc
+	middlewares            []MiddleWarehandler
+	disallowOverlapping    bool
+	maxRetries             int
 }
 
 func defaultOptions() *options {
@@ -91,13 +91,37 @@ func WithExpectedRunTime(d time.Duration) Option {
 }
 
 type middlewareOption struct {
-	middleware MiddlewareFunc
+	middleware MiddleWarehandler
 }
 
-func (l middlewareOption) apply (opts *options) {
+func (l middlewareOption) apply(opts *options) {
 	opts.middlewares = append(opts.middlewares, l.middleware)
 }
 
-func WithMiddleWare(handler MiddlewareFunc) Option {
+func WithMiddleWare(handler MiddleWarehandler) Option {
 	return middlewareOption{middleware: handler}
+}
+
+type disallowOverlappingOption struct {
+	disallowOverlap bool
+}
+
+func (l disallowOverlappingOption) apply(opts *options) {
+	opts.disallowOverlapping = l.disallowOverlap
+}
+
+func DisallowOverlappingJobsOption(val bool) Option {
+	return disallowOverlappingOption{disallowOverlap: val}
+}
+
+type maxRetriesOption struct {
+	maxRetries int
+}
+
+func (l maxRetriesOption) apply(opts *options) {
+	opts.maxRetries = l.maxRetries
+}
+
+func SetMaxJobRetriesOption(val int) Option {
+	return maxRetriesOption{maxRetries: val}
 }
