@@ -1,19 +1,21 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/sherifabdlnaby/sched"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sherifabdlnaby/sched"
 )
 
 func main() {
 
-	job := func(id string) func() {
-		return func() {
+	job := func(id string) func(context.Context) {
+		return func(context.Context) {
 			log.Println(id + "\t Doing some work...")
 			time.Sleep(1 * time.Second)
 			log.Println(id + "\t Finished Work.")
@@ -40,11 +42,13 @@ func main() {
 		panic(fmt.Sprintf("invalid delay: %s", err.Error()))
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// Create Schedule
-	schedule0 := sched.NewSchedule("cron-every-minute", cronTimer, job("job cron every minute"), sched.WithLogger(sched.DefaultLogger()))
-	schedule1 := sched.NewSchedule("cron-every-5minute", cronTimer5, job("job cron every 5 minute"), sched.WithLogger(sched.DefaultLogger()))
-	schedule2 := sched.NewSchedule("fixed-every-30seconds", fixedTimer30second, job("job every 30 seconds"), sched.WithLogger(sched.DefaultLogger()))
-	schedule3 := sched.NewSchedule("once-after-10seconds", onceAfter10s, job("job once after 10 seconds"), sched.WithLogger(sched.DefaultLogger()))
+	schedule0 := sched.NewSchedule(ctx, "cron-every-minute", cronTimer, job("job cron every minute"), sched.WithLogger(sched.DefaultLogger()))
+	schedule1 := sched.NewSchedule(ctx, "cron-every-5minute", cronTimer5, job("job cron every 5 minute"), sched.WithLogger(sched.DefaultLogger()))
+	schedule2 := sched.NewSchedule(ctx, "fixed-every-30seconds", fixedTimer30second, job("job every 30 seconds"), sched.WithLogger(sched.DefaultLogger()))
+	schedule3 := sched.NewSchedule(ctx, "once-after-10seconds", onceAfter10s, job("job once after 10 seconds"), sched.WithLogger(sched.DefaultLogger()))
 
 	// Start Schedule
 	schedule0.Start()
@@ -56,6 +60,8 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	_ = <-signalChan
+
+	cancel()
 
 	// Stop before shutting down.
 	schedule0.Stop()

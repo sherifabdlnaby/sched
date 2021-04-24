@@ -13,6 +13,9 @@ type options struct {
 	// ------------------
 	initDefaultScope       bool
 	defaultScopePrintEvery time.Duration
+	middlewares            []MiddleWarehandler
+	disallowOverlapping    bool
+	maxRetries             int
 }
 
 func defaultOptions() *options {
@@ -85,4 +88,40 @@ func (l expectedRunTime) apply(opts *options) {
 //WithExpectedRunTime Use to indicate the expected Runtime ( Logs a warning and adds in metrics when it exceeds )
 func WithExpectedRunTime(d time.Duration) Option {
 	return expectedRunTime{duration: d}
+}
+
+type middlewareOption struct {
+	middleware MiddleWarehandler
+}
+
+func (l middlewareOption) apply(opts *options) {
+	opts.middlewares = append(opts.middlewares, l.middleware)
+}
+
+func WithMiddleWare(handler MiddleWarehandler) Option {
+	return middlewareOption{middleware: handler}
+}
+
+type disallowOverlappingOption struct {
+	disallowOverlap bool
+}
+
+func (l disallowOverlappingOption) apply(opts *options) {
+	opts.disallowOverlapping = l.disallowOverlap
+}
+
+func DisallowOverlappingJobsOption(val bool) Option {
+	return disallowOverlappingOption{disallowOverlap: val}
+}
+
+type maxRetriesOption struct {
+	maxRetries int
+}
+
+func (l maxRetriesOption) apply(opts *options) {
+	opts.maxRetries = l.maxRetries
+}
+
+func SetMaxJobRetriesOption(val int) Option {
+	return maxRetriesOption{maxRetries: val}
 }

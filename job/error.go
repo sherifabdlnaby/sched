@@ -9,6 +9,14 @@ func (e ErrorJobPanic) Error() string {
 	return e.Message
 }
 
+func (e ErrorJobPanic) Is(target error) bool {
+	switch target.(type) {
+	case ErrorJobPanic:
+		return true
+	}
+	return false
+}
+
 //ErrorJobStarted Error returned when a has already started.
 type ErrorJobStarted struct {
 	Message string
@@ -16,4 +24,12 @@ type ErrorJobStarted struct {
 
 func (e ErrorJobStarted) Error() string {
 	return e.Message
+}
+
+func (e ErrorJobStarted) Is(target error) bool {
+	switch target.(type) {
+	case ErrorJobStarted:
+		return true
+	}
+	return false
 }

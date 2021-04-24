@@ -1,19 +1,21 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/sherifabdlnaby/sched"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sherifabdlnaby/sched"
 )
 
 func main() {
 
-	job := func(id string) func() {
-		return func() {
+	job := func(id string) func(context.Context) {
+		return func(context.Context) {
 			log.Println(id + "\t Doing some work...")
 			time.Sleep(1 * time.Second)
 			log.Println(id + "\t Finished Work.")
@@ -40,14 +42,16 @@ func main() {
 		panic(fmt.Sprintf("invalid delay: %s", err.Error()))
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// Create Schedule
 	scheduler := sched.NewScheduler(sched.WithLogger(sched.LogrusDefaultLogger()),
 		sched.WithConsoleMetrics(1*time.Minute))
 
-	_ = scheduler.Add("cronEveryMinute", cronTimer, job("every-minute-cron"))
-	_ = scheduler.Add("cronEvery5Minute", cronTimer5, job("every-five-minute-cron"))
-	_ = scheduler.Add("fixedTimer30second", fixedTimer30second, job("fixedEvery30Second"))
-	_ = scheduler.Add("onceAfter10s", onceAfter10s, job("onceAfter10s"))
+	_ = scheduler.Add(ctx, "cronEveryMinute", cronTimer, job("every-minute-cron"))
+	_ = scheduler.Add(ctx, "cronEvery5Minute", cronTimer5, job("every-five-minute-cron"))
+	_ = scheduler.Add(ctx, "fixedTimer30second", fixedTimer30second, job("fixedEvery30Second"))
+	_ = scheduler.Add(ctx, "onceAfter10s", onceAfter10s, job("onceAfter10s"))
 
 	scheduler.StartAll()
 
@@ -56,6 +60,7 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	_ = <-signalChan
 
+	cancel()
 	// Stop before shutting down.
 	scheduler.StopAll()
 

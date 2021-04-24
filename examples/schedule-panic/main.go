@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/sherifabdlnaby/sched"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sherifabdlnaby/sched"
 )
 
 func main() {
@@ -17,7 +19,7 @@ func main() {
 		panic(fmt.Sprintf("invalid interval: %s", err.Error()))
 	}
 
-	job := func() {
+	job := func(context.Context) {
 		log.Println("Doing some work...")
 		time.Sleep(1 * time.Second)
 
@@ -26,8 +28,10 @@ func main() {
 		log.Println("Finished Work. (Shouldn't be printed)")
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// Create Schedule
-	schedule := sched.NewSchedule("every10s", fixedTimer10second, job, sched.WithLogger(sched.DefaultLogger()))
+	schedule := sched.NewSchedule(ctx, "every10s", fixedTimer10second, job, sched.WithLogger(sched.DefaultLogger()))
 
 	// Start Schedule
 	schedule.Start()
@@ -37,8 +41,9 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	_ = <-signalChan
 
+	cancel()
+
 	// Stop before shutting down.
 	schedule.Stop()
 
-	return
 }

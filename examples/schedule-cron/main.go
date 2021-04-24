@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/sherifabdlnaby/sched"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sherifabdlnaby/sched"
 )
 
 func main() {
@@ -17,14 +19,16 @@ func main() {
 		panic(fmt.Sprintf("invalid cron expression: %s", err.Error()))
 	}
 
-	job := func() {
+	job := func(context.Context) {
 		log.Println("Doing some work...")
 		time.Sleep(1 * time.Second)
 		log.Println("Finished Work.")
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// Create Schedule
-	schedule := sched.NewSchedule("cron", cronTimer, job, sched.WithLogger(sched.DefaultLogger()))
+	schedule := sched.NewSchedule(ctx, "cron", cronTimer, job, sched.WithLogger(sched.DefaultLogger()))
 
 	// Start Schedule
 	schedule.Start()
@@ -39,6 +43,7 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	_ = <-signalChan
 
+	cancel()
 	// Stop before shutting down.
 	schedule.Stop()
 
